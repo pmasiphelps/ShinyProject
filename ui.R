@@ -1,37 +1,35 @@
 ##ui.R
 library(shiny)
 library(shinydashboard)
+library(plotly)
+library(dplyr)
+library(maps)
 
 shinyUI(dashboardPage(
-  dashboardHeader(title = "My Dashboard"),
+  dashboardHeader(title = "Wisconsin Police Stops: A Dashboard for the People, by the People"),
   dashboardSidebar(
     sidebarUserPanel("Patrick Masi-Phelps",
                       image = "https://nationalzoo.si.edu/sites/default/files/animals/africanlion-005_0.jpg"),
     sidebarMenu(
-      menuItem("Map", tabName = "map", icon = icon("map")), #look at icon help page, click on Font Awesome for cool icons
-      menuItem("Data", tabName = "data", icon = icon("database"))),
+      # menuItem("Race Data", tabName = "race", icon = icon("map")), #look at icon help page, click on Font Awesome for cool icons
+      menuItem("Seasonal Changes", 
+               tabName = "seasons", 
+               icon = icon("database"))),
     selectizeInput("selected",    #this is the widget you can insert. insert it elsewhere if u want
                    "Select Item to Display",
-                   choice) #we made the "choice" variable equal to the columns of the dataset (see global.r), so user can choose which variables to look at
+                   month_choice)
   ),
   dashboardBody(
     tabItems(
-      tabItem(tabName = "map",
+      tabItem(tabName = "seasons",
               #info boxes
               fluidRow(infoBoxOutput("maxBox"),
                        infoBoxOutput("minBox"),
                        infoBoxOutput("avgBox")),
               # gvisGeoChart
-              fluidRow(box(htmlOutput("map"),
-                           height = 300),
-                       # gvisHistoGram
-                       box(htmlOutput("hist"),
-                           height = 300))
-              ),
-      tabItem(tabName = "data",
-              # datatable
-              fluidRow(box(DT::dataTableOutput("table"),
-                           width = 12)))
+              fluidPage(plotlyOutput("map")
               )
+      )
+    )
   )
 ))

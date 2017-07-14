@@ -1,9 +1,13 @@
 ## global.R ##
 
 # convert matrix to dataframe
-state_stat <- data.frame(state.name = rownames(state.x77), state.x77)
-# remove row names
-rownames(state_stat) <- NULL
+WIcountymonthpercentdiff <- read.csv("WImonthlystops.csv")
+
+#set up the hover stuff
+WIcountymonthpercentdiff$hover <- with(WIcountymonthpercentdiff %>% filter(month == input$selected), paste(County, '<br>', 
+                                                                       "Stops this MOnth", total_stops, 
+                                                                       "Percent Difference from Average Month", percent_diff_stops_than_avg, "<br>"))
+
 # create variable with colnames as choice
-choice <- colnames(state_stat)[-1]
+month_choice <- (WIcountymonthpercentdiff %>% distinct(month))[,1]
 

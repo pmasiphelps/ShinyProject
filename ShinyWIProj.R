@@ -2,7 +2,6 @@
 #Connect to RShiny hosting account - https://www.shinyapps.io/admin/#/dashboard
 rsconnect::setAccountInfo(name='pmasiphelps', token='97B09C90186FFB5822F2B3EFE953E00A', secret='h8zXl01tUOwxGmYA5bVBRCU1RSM/d0WlgvjGAolJ')
 
-setwd("/Users/Patrick/Documents/ShinyProject")
 
 #packages
 library(dplyr)
@@ -10,7 +9,7 @@ library(tidyverse)
 library(lubridate)
 
 #Data Cleaning
-WIstops <- read.csv("WI-clean.csv")
+WIstops <- read.csv("/Users/Patrick/Documents/ShinyProject/WI-clean.csv")
 
 WIstops$stop_date <- format(as.Date(WIstops$stop_date), "%Y/%m/%d")  #change the stop date to type date
 
@@ -40,6 +39,20 @@ WIraceyearbar <- ggplot(data = WIstops6, aes(x = year, y = total_stops, fill = d
   xlab("Year") + 
   ylab("Number of Stops")
   
+WIstops20 <- WIstops3 %>% group_by(yrmth, driver_race) %>% summarise(total_stops = n())
+
+WIstops20$yrmth <- as.character(WIstops20$yrmth, "%Y/%m")
+
+WIstops21 <- WIstops20 %>% mutate(yearmonth = yrmth)
+
+WIraceyearbar1 <- ggplot(data = WIstops20, aes(x = yrmth, y = total_stops, fill = year)) + 
+  geom_col(position = "dodge") +
+  ggtitle("Wisconsin Police Stops by Race/Year") + 
+  xlab("Year") + 
+  ylab("Number of Stops")
+  facet_wrap(~ driver_race)
+
+
 #total stops by year
 WIstops4 <- WIstops3 %>% group_by(year, month) %>% summarize(n = n())
 
@@ -97,12 +110,6 @@ WIdeptraceyearbar <- ggplot(data = WIstops10, aes(x = year, y = total_stops, fil
   ylab("Number of Stops") +
   facet_wrap( ~ police_department)
 
-WIdeptraceyearbar <- ggplot(data = WIstops3, aes(x = year, y = total_stops, fill = driver_race)) + 
-  geom_col(position = "dodge") +
-  ggtitle("Wisconsin Police Stops by Race/Year") + 
-  xlab("Year") + 
-  ylab("Number of Stops") +
-  facet_wrap( ~ police_department)
 
 #seasonality 
 #stops per month/year
@@ -133,13 +140,13 @@ WIcountymonthbar <- ggplot(data = WIstops12, aes(x = month, y = total_stops, fil
   facet_wrap( ~ county_name)
 
 #get average num of stops by county across 2011-2015
-WIstops13 <- WIstops3 %>% group_by(county_name) %>% summarize(stops_per_month = n()/60)
-WIstops14 <- merge(WIstops3, WIstops13, by = "county_name")
+WIstops13 <- WIstops3 %>% group_by(location_raw) %>% summarize(stops_per_month = n()/60)
+WIstops14 <- merge(WIstops3, WIstops13, by = "location_raw")
 
 WIstops15 <- WIstops3 %>% group_by(month) %>% summarize(n())
 
 #get the percent difference between each county's stops in a specific month (across 2011-2015) compared to an average month
-WIstops16 <- WIstops14 %>% group_by(county_name, stops_per_month, month) %>% 
+WIstops16 <- WIstops14 %>% group_by(location_raw, stops_per_month, month) %>% 
   summarize(total_stops = n()) %>% 
   mutate(avg_stops = total_stops/5, 
          percent_diff_stops_than_avg = (avg_stops-stops_per_month)/stops_per_month)
@@ -150,5 +157,36 @@ WIcountymonthpercentdiffbar <- ggplot(data = WIstops16, aes(x = month, y = perce
   ggtitle("Wisconsin Police Stops: Percent Difference from Avg Month") + 
   xlab("Month") + 
   ylab("Percent Difference from Average Month") +
-  facet_wrap( ~ county_name)
+  facet_wrap( ~ location_raw)
+
+#getting county data
+counties = map_data("county")
+WIcounties <- counties %>% filter(region == "wisconsin")
+ggplot(data = WIcounties, aes(x = long, y = lat)) +
+  geom_polygon(aes(group = group, fill = group))
+
+WIcounties$subregion <- toupper(WIcounties$subregion)
+WIcounties$subregion[WIcounties$subregion == "ST CROIX"] <- "ST. CROIX"
+
+colnames(WIstops16)[1] <- "County"
+colnames(WIcounties)[6] <- "County"
+
+#merging
+WIcountiesmonthsstopspercentdiff <- merge(WIstops16, WIcounties, by = "County")
+
+WIcountiesmonthsstopspercentdiff <- WIcountiesmonthsstopspercentdiff %>% arrange(group, order, month)
+#graphing monthly diffs by county - map
+#test map for may (month = 5)
+WIcountiesmonthsstopspercentdiff_may <- WIcountiesmonthsstopspercentdiff %>% filter(month == "05")
+
+#test map for december (month = 12)
+WIcountiesmonthsstopspercentdiff_dec <- WIcountiesmonthsstopspercentdiff %>% filter(month == "12")
+
+
+wistopsmonthsmap <- ggplot(WIcountiesmonthsstopspercentdiff_dec, aes(x = long, y = lat)) +
+  geom_polygon(aes(group = group, fill = percent_diff_stops_than_avg))
+
+WIcountiesmonthsstopspercentdiff <- WIcountiesmonthsstopspercentdiff %>% filter(County != "MENOMINEE")
+
+write.csv(WIcountiesmonthsstopspercentdiff, file = "WImonthlystops.csv", row.names=FALSE)
 
