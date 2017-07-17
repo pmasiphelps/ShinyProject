@@ -21,6 +21,7 @@ WIstops3$driver_race <- as.character(WIstops3$driver_race)
 
 WIstops3$driver_race[WIstops3$driver_race == ""] <- "None Provided"
 
+
 #missing data
 sapply(WIstops3, function(x) sum(is.na(x)))
 
@@ -38,19 +39,70 @@ WIraceyearbar <- ggplot(data = WIstops6, aes(x = year, y = total_stops, fill = d
   ggtitle("Wisconsin Police Stops by Race/Year") + 
   xlab("Year") + 
   ylab("Number of Stops")
-  
-WIstops20 <- WIstops3 %>% group_by(yrmth, driver_race) %>% summarise(total_stops = n())
 
-WIstops20$yrmth <- as.character(WIstops20$yrmth, "%Y/%m")
+#actual race data stuff
+WIstops3$yrmnth <- paste(WIstops3$year, WIstops3$month)
 
-WIstops21 <- WIstops20 %>% mutate(yearmonth = yrmth)
+WIstops3$yearmonth <- lapply(WIstops3$yrmnth, function(x) as.yearmon(as.numeric(x)))
+                             
+WIstops20 <- WIstops3 %>% group_by(yrmnth, driver_race) %>% summarise(total_stops = n())
 
-WIraceyearbar1 <- ggplot(data = WIstops20, aes(x = yrmth, y = total_stops, fill = year)) + 
+#USE THIS RACE BAR GRAP
+WIraceyearbar1 <- ggplot(data = WIracemonthstops, aes(x = yrmnth, y = total_stops, fill = driver_race)) + 
   geom_col(position = "dodge") +
   ggtitle("Wisconsin Police Stops by Race/Year") + 
+  scale_x_discrete(breaks = c("2011 01", "2011 04", "2011 07", "2011 10", 
+                              "2012 01", "2012 04", "2012 07", "2012 10", 
+                              "2013 01", "2013 04", "2013 07", "2013 10", 
+                              "2014 01", "2014 04", "2014 07", "2014 10", 
+                              "2015 01", "2015 04", "2015 07", "2015 10"),
+                   labels = c("Jan - 2011", "Apr - 2011", "Jul - 2011", "Oct - 2011", 
+                              "Jan - 2012", "Apr - 2012", "Jul - 2012", "Oct - 2012",
+                              "Jan - 2013", "Apr - 2013", "Jul - 2013", "Oct - 2013",
+                              "Jan - 2014", "Apr - 2014", "Jul - 2014", "Oct - 2014",
+                              "Jan - 2015", "Apr - 2015", "Jul - 2015", "Oct - 2015")) +
+  theme(axis.text.x=element_text(angle=90,hjust=1)) +
   xlab("Year") + 
-  ylab("Number of Stops")
-  facet_wrap(~ driver_race)
+  ylab("Number of Stops") +
+  facet_wrap( ~ driver_race)
+
+#ALT RACE LINE GRAPH
+WIraceyearline1 <- plot_ly(WIracemonthstops, x = ~yrmnth, 
+                           y = ~total_stops, 
+                           color = ~driver_race,
+                           type = 'scatter', 
+                           mode = 'lines')
+#RaceLInegraph in DYgraph
+WIracemonthstops2 <- WIracemonthstops
+#turn the date column into date type
+WIracemonthstops2$yrmnthd <- as.Date(paste(WIracemonthstops2$yrmnth, "01", sep = ""), "%Y %m %d")
+WIracemonthstops2 <- spread(WIracemonthstops2, key = driver_race, value = total_stops)
+
+WIracemonthstops3 <- xts(WIracemonthstops2[,2:7], order.by = WIracemonthstops2$yrmnth)
+write.csv(WIracemonthstops3, row.names=TRUE, file = "WIracemonthlystops.csv")
+
+#THIS IS THE ONE the graph......
+WIraceyearline2 <- dygraph(data = WIracemonthstops3, main = "Stops by Race") %>%
+  dyRangeSelector()
+
+#USE THIS PIE CHART
+#add column showing percent of stops in month for each race
+WIstops21 <- WIstops20 %>% group_by(yrmnth) %>% 
+  summarize(total_stops_all_races = sum(total_stops))
+
+WIstops22 <- merge(WIstops20, WIstops21, by = "yrmnth")
+WIstops22 <- WIstops22 %>% mutate(percent_of_stops = total_stops/total_stops_all_races)
+
+write.csv(WIstops22, file = "WIracemonthlystops.csv", row.names=TRUE)
+WIracemonthstops <- WIstops22
+
+#OK HERE"S THE PIE CHART
+WIracemonthpie <- ggplot(WIracemonthstops, aes(x = "", 
+                                        y = percent_of_stops, 
+                                        fill = driver_race)) + 
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start = 0)
+
 
 
 #total stops by year
@@ -81,6 +133,27 @@ WIstops8 <- WIstops3 %>% group_by(officer_id, year, month) %>%
   summarize(num_stops = n(), percent_missing_race = 100*sum(driver_race == "None Provided")/n())
 
 WIstops8$yrmth <- paste(WIstops8$year, WIstops8$month, sep = "/")
+
+WIstops8$yrmth <- as.Date(paste(WIstops8$yrmth, "01", sep = "/"), "%Y/%m/%d")
+
+WIstops8 <- spread(WIstops8, key = officer_id, value = percent_missing_race)
+
+WIstops9 <- WIstops8
+WIstops9[is.na(WIstops9)] <- 0
+
+WIofficerracepercent <- xts(WIstops9[,2:545], order.by = WIstops9$yrmth)
+
+#dygraph of officer stuff
+officer_dygraph <- dygraph(data = WIofficerracepercent, main = "Missing Race Observations by Officer") %>%
+  dyRangeSelector() %>% 
+  dyHighlight(highlightCircleSize = .2,
+              highlightSeriesBackgroundAlpha = 0.3,
+              hideOnMouseOut = FALSE) %>% 
+  dyLegend(show = "never") %>% 
+  dyAxis("y", label = "Percentage of Stops with Missing Race Observation/Month")
+
+write.csv(WIofficerracepercent, file = "WIofficerracepercent.csv", row.names=TRUE)
+
 
 #line graph of officers recording race variable over time
 WIofficerracemonthline <- ggplot(data = WIstops8, aes(x = yrmth, 
@@ -115,7 +188,11 @@ WIdeptraceyearbar <- ggplot(data = WIstops10, aes(x = year, y = total_stops, fil
 #stops per month/year
 WIstops3$yrmth <- paste(WIstops3$year, WIstops3$month, sep = "/")
 WIstops4 <- WIstops3 %>% group_by(year, month) %>% summarize(total_stops = n())
-WImonthyearbar <- ggplot(data = WIstops4, aes(x = year, y = total_stops, fill = month)) + 
+
+write.csv(WIstops4, file = "WIstopspermonthyr.csv")
+
+
+WImonthyearbar <- ggplot(data = WIstatemonthyrstops, aes(x = year, y = total_stops, fill = month)) + 
   geom_col(position = "dodge") +
   ggtitle("Wisconsin Police Stops by Month/Year") + 
   xlab("Month/Year") + 
@@ -181,6 +258,14 @@ WIcountiesmonthsstopspercentdiff_may <- WIcountiesmonthsstopspercentdiff %>% fil
 
 #test map for december (month = 12)
 WIcountiesmonthsstopspercentdiff_dec <- WIcountiesmonthsstopspercentdiff %>% filter(month == "12")
+
+WIcountiesmonthsstopspercentdiff2 <- WIcountiesmonthsstopspercentdiff
+
+WIcountiesmonthsstopspercentdiff2$month <- lapply(WIcountiesmonthsstopspercentdiff2$month, function(x) as.month(as.numeric(x)))
+
+
+WIstops$stop_date <- format(as.Date(WIstops$stop_date), "%Y/%m/%d") 
+WIstops3$yearmonth <- lapply(WIstops3$yrmnth, function(x) as.yearmon(as.numeric(x)))
 
 
 wistopsmonthsmap <- ggplot(WIcountiesmonthsstopspercentdiff_dec, aes(x = long, y = lat)) +
