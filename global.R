@@ -1,23 +1,28 @@
 ## global.R ##
+##Patrick Masi-Phelps##
 
-# use the csv with monthly stop data by county
+library(dplyr)
+#this file reads in all of the csv files that this app needs to run.
+
+#csv with monthly stop data by county - used in the red/blue map of counties 
+#showing the percent difference in stops compared to the average month
 WIcountymonthpercentdiff <- read.csv("WImonthlystops.csv")
 
-# use this for the state-wide month/year total stop data
+#csv with state-wide stop data by month - used in the bar graph of total stops per month
 WIstatemonthyrstops <- read.csv("WIstopspermonthyr.csv")
 
-# use the csv with monthly stop data by race. this also has total stops per month for the state.
+#csv with monthly stop data by race - used in the dygraph time series
 WIracemonthstops <- read.csv("WIracemonthlystops.csv")
 
-#WIracemonthstops <- read.table(file = "WIracemonthlystops.csv", sep = ",", row.names = 1, header = TRUE)
-
-# use the csv with the percent of recorded race variables, by officer, by month
-WIofficerracepercent <- read.csv("WIofficerracepercent.csv")
+#csv with the percentage of stops with missing race observations, by officer, by month - 
+#used in the heat map/density plot
+WIofficerracepercent2 <- read.csv("WIofficerracepercent2.csv")
 
 #set up the hover stuff for monthly stops map
 WIcountymonthpercentdiff$hover <- with(WIcountymonthpercentdiff, paste(County, '<br>', 
                                                                        "Stops this Month", total_stops, 
                                                                        "Percent Difference from Average Month", percent_diff_stops_than_avg, "<br>"))
-# create variable with colnames as choice
+
+#creates a variable that will serve as the user's choice for the month slider in the county map
 month_choice <- (WIcountymonthpercentdiff %>% distinct(month))[,1]
 
