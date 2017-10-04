@@ -1,13 +1,5 @@
----
-title: "Shiny Project README - Wisconsin Police Stops 2011 - 2015"
-output: html_document
----
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-## Summary
+## Wisconsin Police Stops - RShiny App
 
 The goal of this project was exploratory data analysis of the Wisconsin Police Stops dataset, made publicly available by the Stanford Open Policing Project at <https://openpolicing.stanford.edu/>.
 
@@ -17,8 +9,4 @@ This study looks at seasonality by month and missingness of racial observations 
 
 RShiny App: <https://pmasiphelps.shinyapps.io/wisconsinshinyproject/>
 
-A pdf of the presentation prepared in conjunction with this RShiny app can be found in the associated Github repository.
-
-Feel free to contact me with any questions.
-
-Patrick Masi-Phelps
+A pdf of the presentation prepared in conjunction with this RShiny app can be found in this repository.
