@@ -1,5 +1,6 @@
 
-## Wisconsin Police Stops 2011-2015 - RShiny App
+# Wisconsin Police Stops 2011-2015 - RShiny App
+## Blog post: https://blog.nycdatascience.com/r/wisconsin-state-police-stops-choices-madison-led-missing-racial-data-outcomes/
 
 The goal of this project was exploratory data analysis of the Wisconsin Police Stops dataset, made publicly available by the Stanford Open Policing Project at <https://openpolicing.stanford.edu/>.
 
